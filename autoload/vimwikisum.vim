@@ -3,17 +3,19 @@ vim9script
 export def SumVisualSelection(line1: number, line2: number)
     var mode = visualmode()
     
-    # virtcol() returns a plain number directly. No lists involved!
     var col1: number = virtcol("'<")
     var col2: number = virtcol("'>")
     
     var total: float = 0.0
     var found_cells = false
 
+    # Updated pattern to allow an optional leading minus sign
+    var pattern = '-\?\d\+\(\.\d\+\)\?'
+
     for lnum in range(line1, line2)
         var line = getline(lnum)
         
-        # Check if line is a valid table row
+        # Validate that it's a Vimwiki table row, not a separator line
         if line !~ '^\s*|.*|\s*$' || line =~ '^\s*|[-\s|:]*|\s*$'
             continue
         endif
@@ -24,7 +26,6 @@ export def SumVisualSelection(line1: number, line2: number)
             var idx2: number = col2 - 1
             
             var content = line[idx1 : idx2]
-            var pattern = '\d\+\(\.\d\+\)\?'
             var start_idx = 0
             
             while start_idx < len(content)
@@ -44,7 +45,8 @@ export def SumVisualSelection(line1: number, line2: number)
             var cells = split(line, '|')
             for cell in cells
                 var CleanCell = trim(cell)
-                if CleanCell =~ '^\d\+\(\.\d\+\)\?$'
+                # Match clean cell against the negative-matching pattern
+                if CleanCell =~ '^' .. pattern .. '$'
                     total += str2float(CleanCell)
                     found_cells = true
                 endif
@@ -57,7 +59,7 @@ export def SumVisualSelection(line1: number, line2: number)
         return
     endif
 
-    # Format output cleanly
+    # Format output cleanly (drop trailing .0 for integers)
     var result_str = (total == float2nr(total)) ? string(float2nr(total)) : string(total)
 
     setreg('+', result_str)
