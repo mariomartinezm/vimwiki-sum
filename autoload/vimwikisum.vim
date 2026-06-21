@@ -1,5 +1,13 @@
 vim9script
 
+# Helper to strip out formatting commas and common currency symbols
+def SanitizeNumericString(val: string): string
+    # Remove $, €, £, ¥, ₹, and commas
+    var clean = substitute(val, '[\$,€,£,¥,₹]', '', 'g')
+    clean = substitute(clean, ',', '', 'g')
+    return trim(clean)
+enddef
+
 export def SumVisualSelection(line1: number, line2: number)
     var mode = visualmode()
     
@@ -9,13 +17,12 @@ export def SumVisualSelection(line1: number, line2: number)
     var total: float = 0.0
     var found_cells = false
 
-    # Updated pattern to allow an optional leading minus sign
-    var pattern = '-\?\d\+\(\.\d\+\)\?'
+    # \v forces Very Magic mode. We use [0-9,] to safely include commas inside brackets.
+    var pattern = '\v-?[\$,€,£,¥,₹]?[0-9]+[0-9,]*(\.[0-9]+)?'
 
     for lnum in range(line1, line2)
         var line = getline(lnum)
         
-        # Validate that it's a Vimwiki table row, not a separator line
         if line !~ '^\s*|.*|\s*$' || line =~ '^\s*|[-\s|:]*|\s*$'
             continue
         endif
@@ -34,7 +41,8 @@ export def SumVisualSelection(line1: number, line2: number)
                     break
                 endif
                 
-                total += str2float(matched_str)
+                var clean_str = SanitizeNumericString(matched_str)
+                total += str2float(clean_str)
                 found_cells = true
                 
                 var match_pos = match(content, pattern, start_idx)
@@ -45,9 +53,9 @@ export def SumVisualSelection(line1: number, line2: number)
             var cells = split(line, '|')
             for cell in cells
                 var CleanCell = trim(cell)
-                # Match clean cell against the negative-matching pattern
-                if CleanCell =~ '^' .. pattern .. '$'
-                    total += str2float(CleanCell)
+                if CleanCell =~ '^\v' .. pattern .. '$'
+                    var clean_str = SanitizeNumericString(CleanCell)
+                    total += str2float(clean_str)
                     found_cells = true
                 endif
             endfor
@@ -59,7 +67,6 @@ export def SumVisualSelection(line1: number, line2: number)
         return
     endif
 
-    # Format output cleanly (drop trailing .0 for integers)
     var result_str = (total == float2nr(total)) ? string(float2nr(total)) : string(total)
 
     setreg('+', result_str)
