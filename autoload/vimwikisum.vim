@@ -1,8 +1,8 @@
 vim9script
 
-# Helper to strip out formatting commas and common currency symbols
+# Helper to strip formatting decorations while protecting scientific notation exponent characters
 def SanitizeNumericString(val: string): string
-    # Remove $, €, £, ¥, ₹, and commas
+    # Remove $, €, £, ¥, ₹, and thousands commas
     var clean = substitute(val, '[\$,€,£,¥,₹]', '', 'g')
     clean = substitute(clean, ',', '', 'g')
     return trim(clean)
@@ -17,8 +17,8 @@ export def SumVisualSelection(line1: number, line2: number)
     var total: float = 0.0
     var found_cells = false
 
-    # \v forces Very Magic mode. We use [0-9,] to safely include commas inside brackets.
-    var pattern = '\v-?[\$,€,£,¥,₹]?[0-9]+[0-9,]*(\.[0-9]+)?'
+    # Updated pattern: now includes an optional scientific notation exponent suffix at the end
+    var pattern = '\v-?[\$,€,£,¥,₹]?[0-9]+[0-9,]*(\.[0-9]+)?(([eE][+-]?[0-9]+)?)'
 
     for lnum in range(line1, line2)
         var line = getline(lnum)
