@@ -1,0 +1,12 @@
+# Vim backup and swap files
+*.swp
+*.swo
+*.un~
+.netrwhist
+
+# Tags
+tags
+tags-ja
+
+# OS generated
+.DS_Store
