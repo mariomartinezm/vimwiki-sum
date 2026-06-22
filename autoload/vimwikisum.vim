@@ -10,10 +10,10 @@ enddef
 
 export def SumVisualSelection(line1: number, line2: number)
     var mode = visualmode()
-    
+
     var col1: number = virtcol("'<")
     var col2: number = virtcol("'>")
-    
+
     var total: float = 0.0
     var found_cells = false
     var only_separators = true  # Track if the selection only touched dividers
@@ -23,38 +23,38 @@ export def SumVisualSelection(line1: number, line2: number)
 
     for lnum in range(line1, line2)
         var line = getline(lnum)
-        
+
         # If it's a markdown table separator line (e.g., |---|---|)
         if line =~ '^\s*|[-\s|:]*|\s*$'
             continue
         endif
-        
+
         # If it doesn't even look like a table line, skip it
         if line !~ '^\s*|.*|\s*$'
             continue
         endif
-        
+
         # If we reached here, we found at least one valid data row structure
         only_separators = false
-        
+
         if mode == "\<Cc>" || mode == "\<C-v>"
             # --- Visual Block Mode Column Extraction ---
             var idx1: number = col1 - 1
             var idx2: number = col2 - 1
-            
+
             var content = line[idx1 : idx2]
             var start_idx = 0
-            
+
             while start_idx < len(content)
                 var matched_str = matchstr(content, pattern, start_idx)
                 if matched_str == ''
                     break
                 endif
-                
+
                 var clean_str = SanitizeNumericString(matched_str)
                 total += str2float(clean_str)
                 found_cells = true
-                
+
                 var match_pos = match(content, pattern, start_idx)
                 start_idx = match_pos + len(matched_str)
             endwhile
