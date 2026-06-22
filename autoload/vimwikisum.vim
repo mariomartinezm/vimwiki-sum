@@ -16,6 +16,7 @@ export def SumVisualSelection(line1: number, line2: number)
     
     var total: float = 0.0
     var found_cells = false
+    var only_separators = true  # Track if the selection only touched dividers
 
     # Updated pattern: now includes an optional scientific notation exponent suffix at the end
     var pattern = '\v-?[\$,€,£,¥,₹]?[0-9]+[0-9,]*(\.[0-9]+)?(([eE][+-]?[0-9]+)?)'
@@ -23,9 +24,18 @@ export def SumVisualSelection(line1: number, line2: number)
     for lnum in range(line1, line2)
         var line = getline(lnum)
         
-        if line !~ '^\s*|.*|\s*$' || line =~ '^\s*|[-\s|:]*|\s*$'
+        # If it's a markdown table separator line (e.g., |---|---|)
+        if line =~ '^\s*|[-\s|:]*|\s*$'
             continue
         endif
+        
+        # If it doesn't even look like a table line, skip it
+        if line !~ '^\s*|.*|\s*$'
+            continue
+        endif
+        
+        # If we reached here, we found at least one valid data row structure
+        only_separators = false
         
         if mode == "\<Cc>" || mode == "\<C-v>"
             # --- Visual Block Mode Column Extraction ---
@@ -62,8 +72,14 @@ export def SumVisualSelection(line1: number, line2: number)
         endif
     endfor
 
+    # Context-aware user messages
+    if only_separators
+        echo "Selection only contained table header separators or structure lines."
+        return
+    endif
+
     if !found_cells
-        echo "No valid Vimwiki table cells found in selection."
+        echo "No valid numeric Vimwiki table cells found in selection."
         return
     endif
 
